@@ -38,7 +38,7 @@ def gcp_image(instance, parameters, context, feedback, inputs):
                 f'\"{feature[name_field]}\"' for feature in feature_group
             ]
             
-            if type(gcp_name) is not str:
+            if not isinstance(gcp_name, str):
                 gcp_name = f'GCP_{gcp_name}'
             
             output_images.write(gcp_name + '\n' + ' '.join(image_batch) + '\n\n')

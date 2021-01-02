@@ -26,7 +26,7 @@ def gcp_bookmark(instance, parameters, context, feedback, inputs):
         
         # Instead of getting the name from an attribute, 
         # this gets the feature's id and turns it into the gcp name.
-        gcp_name = feature[name_field]
+        gcp_name = str(feature[name_field])
         gcp_view = feature.geometry().boundingBox()
         
         bookmark = QgsBookmark()

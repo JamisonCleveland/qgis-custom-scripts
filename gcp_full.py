@@ -1,20 +1,34 @@
 from qgis.processing import alg
 from qgis.core import QgsFeature, QgsFeatureSink
 
+"""
+
+"""
+"""
+
+"""
+
+
 import processing
  
 @alg(name="gcpfull", label=alg.tr("GCP Grouping"), group="vds",
      group_label=alg.tr("VDS"))
 
-@alg.input(type=alg.VECTOR_LAYER, name="INPUT_IMG", label="Input images")
-@alg.input(type=alg.VECTOR_LAYER, name="INPUT_GCP", label="Input GCPs")
+@alg.input(type=alg.VECTOR_LAYER, name="IMAGE", label="Input images")
+@alg.input(type=alg.FIELD, name="IMAGE_FIELD", label="Image file name",
+           parentLayerParameterName="IMAGE")
+
+@alg.input(type=alg.VECTOR_LAYER, name="GCP", label="Input GCPs")
+@alg.input(type=alg.FIELD, name="GCP_FIELD", label="Name of GCP",
+           parentLayerParameterName="GCP")
 
 @alg.input(type=alg.CRS, name="LOCAL_CRS", label="CRS for processing GCPs", 
            default="EPSG:2256")
 @alg.input(type=alg.DISTANCE, name="BUFFER_DIST", label="Radius of GCP buffer",
            parentParameterName="LOCAL_CRS", default=10)
-@alg.input(type=alg.VECTOR_LAYER_DEST, name="BUFFER_LAYER", label="GCP Buffer")
-@alg.input(type=alg.VECTOR_LAYER_DEST, name="JOINED_LAYER", label="Joined Layer")
+
+@alg.input(type=alg.VECTOR_LAYER_DEST, name="BUFFER", label="GCP Buffer")
+@alg.input(type=alg.VECTOR_LAYER_DEST, name="JOINED", label="Joined Layer")
 
 @alg.input(type=alg.BOOL, name="BOOKMARKS", label="Create Bookmarks",
            default=True)
@@ -26,15 +40,18 @@ def testalg(instance, parameters, context, feedback, inputs):
     """
     Description goes here. (Don't delete this! Removing this comment will cause errors.)
     """
-    img_layer = instance.parameterAsVectorLayer(parameters, "INPUT_IMG", context)
-    gcp_layer = instance.parameterAsVectorLayer(parameters, "INPUT_GCP", context)
+    img_layer = instance.parameterAsVectorLayer(parameters, "IMAGE", context)
+    img_field = instance.parameterAsFields(parameters, "IMAGE_FIELD", context)[0]
+    
+    gcp_layer = instance.parameterAsVectorLayer(parameters, "GCP", context)
+    gcp_field = instance.parameterAsFields(parameters, "GCP_FIELD", context)[0]
     
     local_crs = instance.parameterAsCrs(parameters, "LOCAL_CRS", context)
     
     buffer_dist = instance.parameterAsDouble(parameters, "BUFFER_DIST", context)
     
-    buffer_layer = instance.parameterAsOutputLayer(parameters, "BUFFER_LAYER", context)
-    joined_layer = instance.parameterAsOutputLayer(parameters, "JOINED_LAYER", context)
+    buffer_layer = instance.parameterAsOutputLayer(parameters, "BUFFER", context)
+    joined_layer = instance.parameterAsOutputLayer(parameters, "JOINED", context)
     
     create_bookmarks = instance.parameterAsBoolean(parameters, "BOOKMARKS", context)
     
@@ -78,8 +95,8 @@ def testalg(instance, parameters, context, feedback, inputs):
     feedback.pushInfo('Creating batch file of images under points')
     processing.run("script:gcpimage", {
         'INPUT': joined_layer,
-        'GCP_FIELD': "EPSG:4326 :GCP #",
-        'NAME_FIELD': "Name",
+        'GCP_FIELD': gcp_field,
+        'NAME_FIELD': img_field,
         'OUTPUT': output_file,
     }, context=context, feedback=feedback)
     
@@ -89,12 +106,12 @@ def testalg(instance, parameters, context, feedback, inputs):
         feedback.pushInfo('Creating bookmarks of gcps')
         output_dest = processing.run("script:gcpbookmark", {
             'INPUT': gcp_buffer_layer,
-            'NAME_FIELD': "EPSG:4326 :GCP #",
+            'NAME_FIELD': gcp_field,
         }, context=context, feedback=feedback)
     
  
     return {
         "OUTPUT": output_file,
-        "BUFFER_LAYER": gcp_buffer_layer,
-        "JOINED_LAYER": joined_layer,
+        "BUFFER": gcp_buffer_layer,
+        "JOINED": joined_layer,
     }
